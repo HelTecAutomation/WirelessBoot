@@ -1,2 +1,3 @@
 # WirelessBoot
-An ESP32 bootloader system based on Wi-Fi. It makes this device can be programmed or download firmware without an USB cable.
+
+Wireless Boot is a boot loader system for ESP32 MCU. You can download firmware, exchange information, and print logs through WiFi. Therefore, devices no longer require a USB-UART bridge, which can reduce the hardware cost of the system and reduce device size.
