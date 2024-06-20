@@ -1,0 +1,18 @@
+# Project specific
+build
+managed_components
+
+# macOS
+.DS_Store
+
+# IntelliJ
+.idea
+*.iml
+out
+gen
+
+# VS Code
+.vscode
+.history
+*.vsix
+*.code-workspace

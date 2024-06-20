@@ -1,0 +1,230 @@
+
+<!DOCTYPE html><html><body><table class="fixed" border="0">
+    <col width="1000px" /><col width="500px" />
+    <tr>
+    <td>
+        <h2>Heltec WirelessBoot Server</h2>
+        <progress id="downloadProgress" max="100" value="0"></progress>
+    </td>
+    <td>
+        <table border="0">
+            <tr>
+                <td>
+                    <label for="newFirmware">Upload a firmware</label>
+                </td>
+                <td colspan="2">
+                    <input id="newFirmware" type="file" onchange="setName()" style="width:100%;">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="firmwarePartition">Select upload partition</label>
+                </td>
+                <td colspan="2">
+                    <select id="firmwarePartition" name="firmwarePartition">
+                        <option value="app">app</option>
+                        <option value="flashApp">flashApp</option>
+                        <option value="secondApp">secondApp</option>
+                      </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="firmwareName">Set firmware name</label>
+                </td>
+                <td>
+                    <input id="firmwareName" type="text" style="width:100%;">
+                </td>
+                <td>
+                    <button id="upload" type="button" onclick="firmwareUpload()">Upload</button>
+                </td>
+                <td>
+                    <button id="restart" type="button" onclick="firmwareStatusConf('/restart')">Restart</button>
+                </td>
+            </tr>
+        </table>
+    </td></tr>
+</table>
+<script>
+function setTextContentById(id,val){
+    document.getElementById(id).textContent = "ChipId: " + val;
+}
+function setValById(id,val){
+    document.getElementById(id).value=val;
+}
+function getValById(id){
+    let val=document.getElementById(id).value;return val;
+}
+function setName() {
+    let default_path = document.getElementById("newFirmware").files[0].name;
+    document.getElementById("firmwareName").value = default_path;
+}
+function getFormattedLocalTime() {
+  let currentTime = new Date();
+  let year = currentTime.getFullYear();
+  let month = currentTime.getMonth() + 1; 
+  let day = currentTime.getDate();
+  let hours = currentTime.getHours();
+  let minutes = currentTime.getMinutes();
+  let seconds = currentTime.getSeconds();
+  let formattedTime = year + '-' + month + '-' + day + '.' + hours + ':' + minutes + ':' + seconds;
+  return formattedTime;
+}
+function firmwareUpload() {
+    let firmwareName = document.getElementById("firmwareName").value;
+    let firmwarePartition = document.getElementById("firmwarePartition").value;
+    let localTime = getFormattedLocalTime();
+    let uploadPath = "/upload/" +firmwarePartition+'_' + localTime + '_'+ firmwareName;
+    let fileInput = document.getElementById("newFirmware").files;
+
+    let MAX_FILE_SIZE = 0x300000;
+    let MAX_FILE_SIZE_STR = "3M";
+
+    if (fileInput.length == 0) {
+        alert("No firmware selected!");
+    } else if (firmwareName.length == 0) {
+        alert("Firmware name on server is not set!");
+    } else if (firmwareName.indexOf(' ') >= 0) {
+        alert("Firmware name on server cannot have spaces!");
+    } else if (firmwareName[firmwareName.length-1] == '/') {
+        alert("Firmware name not specified after path!");
+    } else if (fileInput[0].size > MAX_FILE_SIZE) {
+        alert("Firmware size must be less than 3M!");
+    } else {
+        document.getElementById("newFirmware").disabled = true;
+        document.getElementById("firmwareName").disabled = true;
+        document.getElementById("upload").disabled = true;
+
+        let file = fileInput[0];
+        let firmwareXhttp = new XMLHttpRequest();
+        firmwareXhttp.upload.onloadend = function(e) {
+            if (e.lengthComputable) {
+                if (e.total === e.loaded) {
+                    alert('Upload completed!');
+                    location.reload(true);
+                } else {
+                    if (firmwareXhttp.status == 0) {
+                        alert("Server closed the connection abruptly!");
+                        location.reload(true);
+                    } else {
+                        alert(firmwareXhttp.status + " Error!\n" + firmwareXhttp.responseText);
+                        location.reload(true);
+                    }
+                }
+            }
+        };
+        firmwareXhttp.upload.onprogress = function (event) {
+            if (event.lengthComputable) {
+                const percentComplete = (event.loaded / event.total) * 100;
+                document.getElementById('downloadProgress').value = percentComplete;
+            }
+        };
+        firmwareXhttp.open("POST", uploadPath, true);
+        firmwareXhttp.send(file);
+        addEventListener("offline", (event) => {
+            firmwareXhttp.abort();
+            alert("WiFi connection lost!");
+        });
+    }
+}
+function firmwareStatusConf(path){
+    let uploadPath = ""+path;
+    let statusConfXhttp = new XMLHttpRequest();
+    statusConfXhttp.onreadystatechange = function() {
+        if (statusConfXhttp.readyState == 4) {
+            if (statusConfXhttp.status == 200) {
+                alert(statusConfXhttp.responseText);
+                location.reload(true);
+            } else if (statusConfXhttp.status == 0) {
+                alert("Server closed the connection abruptly!");
+                location.reload(true);
+            } else {
+                alert(statusConfXhttp.status + " Error!\n" + statusConfXhttp.responseText);
+                location.reload(true);
+            }
+        }
+    };
+    statusConfXhttp.open("POST", uploadPath, true);
+    statusConfXhttp.send(uploadPath);
+}
+function wifiConfUpload(){
+    let uploadPath = "/wifi_conf/write";
+    let wifiData = `{ "ssid":"${getValById("wifi-ssid")}", "password":"${getValById("wifi-password")}" }`
+    let wifiConfXhttp = new XMLHttpRequest();
+    wifiConfXhttp.onreadystatechange = function() {
+        if (wifiConfXhttp.readyState == 4) {
+            if (wifiConfXhttp.status == 200) {
+                alert(wifiConfXhttp.responseText);
+                location.reload(true);
+            } else if (wifiConfXhttp.status == 0) {
+                alert("Server closed the connection abruptly!");
+                location.reload(true);
+            } else {
+                alert(wifiConfXhttp.status + " Error!\n" + wifiConfXhttp.responseText);
+                location.reload(true);
+            }
+        }
+    };
+    wifiConfXhttp.open("POST", uploadPath, true);
+    wifiConfXhttp.send(wifiData);
+}
+function hexStringToJSON(hexString) {
+    const hexValues = hexString.split(',');
+    const jsonResult = {};
+
+    hexValues.forEach((hex, index) => {
+        const decimalValue = parseInt(hex, 16);
+        jsonResult[`value${index}`] = decimalValue.toString();
+    });
+
+    return JSON.stringify(jsonResult);
+}
+
+
+function chipIdUpload(){
+    let uploadPath = "/chid_id/write";
+    let chipIdData = hexStringToJSON(getValById('license'));
+    let chipIdXhttp = new XMLHttpRequest();
+    chipIdXhttp.onreadystatechange = function() {
+        if (chipIdXhttp.readyState == 4) {
+            if (chipIdXhttp.status == 200) {
+                alert(chipIdXhttp.responseText);
+                location.reload(true);
+            } else if (chipIdXhttp.status == 0) {
+                alert("Server closed the connection abruptly!");
+                location.reload(true);
+            } else {
+                alert(chipIdXhttp.status + " Error!\n" + chipIdXhttp.responseText);
+                location.reload(true);
+            }
+        }
+    };
+    chipIdXhttp.open("POST", uploadPath, true);
+    chipIdXhttp.send(chipIdData);
+}
+
+function get_wifi_conf(){
+        fetch('/wifi_conf.json')
+        .then(response => response.json())
+        .then(data => wifi_conf_handle(data));
+}
+function get_chip_id(){
+        fetch('/get_chip_id.json')
+        .then(response => response.json())
+        .then(data => chip_id_handle(data));
+}
+function chip_id_handle(data){
+    setTextContentById("chipId",data.chipId);
+    setValById("license",data.license);
+}
+function wifi_conf_handle(data){
+        setValById("wifi-ssid",data.ssid);
+        setValById("wifi-password",data.password);
+}
+window.onload=function(){
+    get_wifi_conf();
+    get_chip_id();
+}
+</script>
+<table id="info_table" class="fixed" border="1">
+<thead><tr><th>Partition Name</th><th>Partition Size (Bytes)</th><th>Firmware Name</th><th>Firmware size(Bytes)</th><th>Firmware Upload Date</th><th>Run This Firmware</th><th>Erase This Partition</th></tr></thead><tbody>
