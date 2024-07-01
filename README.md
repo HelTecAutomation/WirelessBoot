@@ -10,7 +10,7 @@ The WirelessBoot System can achieve the following functions:
 
 2. **Loading network ports in Arduino IDE.**
 
-![](img/wirelessboot-01.webp)
+![](img/WirelessBoot-01.png)
 
 3. **Debug information and log print**
 
