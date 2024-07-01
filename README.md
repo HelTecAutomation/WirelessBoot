@@ -6,15 +6,15 @@ The WirelessBoot System can achieve the following functions:
 
 1. **Firmware can be uploaded through the management page.**
 
-![](img/wirelessboot-02.jpg)
+![](img/wirelessboot-02.webp)
 
 2. **Loading network ports in Arduino IDE.**
 
-![](img/wirelessboot-01.jpg)
+![](img/wirelessboot-01.webp)
 
 3. **Debug information and log print**
 
-![](img/wirelessboot-03.jpg)
+![](img/wirelessboot-03.webp)
 
 ## Development
 
